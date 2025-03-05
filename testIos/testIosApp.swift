@@ -64,6 +64,31 @@ class ViewController: UIViewController {
     }
     
     @objc func takePhoto() {
+        let cameraAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        
+        switch cameraAuthorizationStatus {
+        case .authorized:
+            openImagePicker()
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        self.openImagePicker()
+                    } else {
+                        self.showCameraAccessDeniedAlert()
+                    }
+                }
+            }
+            
+        case .restricted, .denied:
+            showCameraAccessDeniedAlert()
+            
+        @unknown default:
+            print("Unknown camera authorization status")
+        }
+    }
+    
+    private func openImagePicker() {
         guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
             print("Camera not available")
             return
@@ -72,6 +97,23 @@ class ViewController: UIViewController {
         picker.sourceType = .camera
         picker.delegate = self
         present(picker, animated: true)
+    }
+    
+    private func showCameraAccessDeniedAlert() {
+        let alert = UIAlertController(title: "Camera Access Denied", message: "Please enable camera access in settings.", preferredStyle: .alert)
+        let goToSettings = UIAlertAction(title: "Settings", style: .default) { _ in
+            guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else {
+                return
+            }
+            if UIApplication.shared.canOpenURL(settingsUrl) {
+                UIApplication.shared.open(settingsUrl)
+            }
+        }
+        let cancel = UIAlertAction(title: "Cancel", style: .cancel)
+        
+        alert.addAction(goToSettings)
+        alert.addAction(cancel)
+        present(alert, animated: true)
     }
     
     func uploadImage(image: UIImage, fileName: String) {
