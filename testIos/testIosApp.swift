@@ -52,6 +52,19 @@ class ViewController: UIViewController {
         takePhotoButton.addTarget(self, action: #selector(takePhoto), for: .touchUpInside)
         takePhotoButton.frame = CGRect(x: 20, y: 200, width: 200, height: 50)
         view.addSubview(takePhotoButton)
+        
+        let button3 = UIButton(type: .system)
+        button3.setTitle("doc picker", for: .normal)
+        button3.addTarget(self, action: #selector(openDocumentPicker), for: .touchUpInside)
+        button3.frame = CGRect(x: 20, y: 300, width: 200, height: 50)
+        view.addSubview(button3)
+    }
+    
+    @objc func openDocumentPicker() {
+        let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.pdf, .jpeg, .png, .plainText])
+        documentPicker.delegate = self
+        documentPicker.allowsMultipleSelection = false
+        present(documentPicker, animated: true)
     }
     
     @objc func pickImage() {
@@ -224,5 +237,36 @@ extension ViewController: UIImagePickerControllerDelegate, UINavigationControlle
     
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         picker.dismiss(animated: true, completion: nil)
+    }
+}
+
+extension ViewController: UIDocumentPickerDelegate {
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let pickedDocURL = urls.first else {
+            print("No document was picked.")
+            return
+        }
+        
+        guard pickedDocURL.startAccessingSecurityScopedResource() else {
+            print("Could not access the file's security-scoped resource.")
+            return
+        }
+        
+        // Use `defer` to stop accessing the resource when the function ends
+        defer {
+            pickedDocURL.stopAccessingSecurityScopedResource()
+        }
+        
+        // Convert the URL to NSData
+        let fileData = try? Data(contentsOf: pickedDocURL)
+        let nsData = fileData as? NSData
+        
+        // Print some debug information
+        print("Document picked URL: \(pickedDocURL)")
+        print("File size (in bytes): \(String(describing: nsData?.length))")
+    }
+    
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        print("Document picker was cancelled.")
     }
 }
